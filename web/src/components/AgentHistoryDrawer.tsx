@@ -864,6 +864,12 @@ export function AgentHistoryDrawer({
         <div className="agent-history-chat-frame">
           <AgentHistoryChat
             items={chatItems}
+            speechActive={open}
+            speechScopeKey={JSON.stringify([
+              composerDraftKey,
+              history?.path,
+              session?.session?.value,
+            ])}
             listRef={contentRef}
             contentRef={timelineRef}
             highlightedSequence={highlightedSequence}
