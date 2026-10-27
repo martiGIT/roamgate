@@ -55,15 +55,26 @@ function snapshot(id: string): ConnectionAgentSessions {
             }
           : worktree,
     })),
-    tabs: ["w1", "w2", "w3"].map((workspace_id) => ({
-      workspace_id,
-      tab_id: `${workspace_id}:t1`,
-      number: 1,
-      label: `${id} ${workspace_id} tab`,
-      focused: true,
-      pane_count: 1,
-      agent_status: "working",
-    })),
+    tabs: [
+      ...["w1", "w2", "w3"].map((workspace_id) => ({
+        workspace_id,
+        tab_id: `${workspace_id}:t1`,
+        number: 1,
+        label: `${id} ${workspace_id} tab`,
+        focused: true,
+        pane_count: 1,
+        agent_status: "working",
+      })),
+      {
+        workspace_id: "w2",
+        tab_id: "w2:t2",
+        number: 2,
+        label: `${id} w2 second tab`,
+        focused: false,
+        pane_count: 1,
+        agent_status: "unknown",
+      },
+    ],
     panes: ["w1", "w3"].map((workspace_id) => ({
       workspace_id,
       pane_id: `${workspace_id}:p1`,
@@ -261,6 +272,25 @@ if (process.env.ROAMGATE_SERVER_TREE_DOM_TEST !== "1") {
           ".workspace-tab-count + .workspace-server-badge",
         ),
       ).not.toBeNull();
+      expect(
+        workspace("beta", "beta w1").querySelector(".workspace-tab-chip"),
+      ).toBeNull();
+      const chips = workspace("beta", "beta w2").querySelectorAll<HTMLElement>(
+        ".workspace-tab-chip",
+      );
+      expect([...chips].map((chip) => chip.textContent)).toEqual(["1", "2"]);
+      expect(
+        workspace("beta", "beta w2").querySelector(
+          ".workspace-tab-chips + .workspace-server-badge",
+        ),
+      ).not.toBeNull();
+      await act(async () => chips[1].click());
+      expect(navigate).toHaveBeenLastCalledWith({
+        connectionId: "beta",
+        runtimeGeneration: 1,
+        workspaceId: "w2",
+        paneId: undefined,
+      });
 
       await write(WORKSPACE_AGENT_LAYOUT_STORAGE_KEY, "nested");
       await act(async () =>
