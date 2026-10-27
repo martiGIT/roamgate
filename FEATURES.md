@@ -45,8 +45,10 @@ Enter to switch, Esc to cancel. Press K to switch to search mode.
 ### Pane Search
 
 `Alt+K` searches **every** live pane by workspace, tab, cwd, or agent
-name/status. All terms must match, in any order. Enter switches; `Alt+K` or Esc
-closes.
+name/status. Agents on the other ready servers follow, attention first, and
+every row shows its server, which is searchable too. All terms must match, in
+any order. Enter switches, opening another server's agent on its server;
+`Alt+K` or Esc closes.
 
 ## Full Browser Terminal
 

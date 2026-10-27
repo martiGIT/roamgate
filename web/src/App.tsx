@@ -46,6 +46,7 @@ import {
   MessagesSquare,
   Minimize2,
   PanelTop,
+  Search,
   SquareTerminal,
 } from "lucide-react";
 import {
@@ -133,9 +134,16 @@ import {
   activePaneIdForSnapshot,
   type PaneJumpEntry,
   paneJumpEntries,
+  paneJumpEntryKey,
   paneJumpTargetId,
   paneSearchEntries,
+  serverPaneSearchEntries,
 } from "./paneJump";
+import { sortAgentPanes } from "./agentOrder";
+import {
+  openServerSession,
+  useAllServerAgentSessions,
+} from "./useAllServerAgentSessions";
 import {
   type Notice,
   noticeAutoDismissDelay,
@@ -707,7 +715,10 @@ function PaneJumpOverlay({
   const selectedItemRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searching = search !== null;
-  const selectedPaneId = entries[selectedIndex]?.paneId;
+  const selectedEntry = entries[selectedIndex];
+  const selectedPaneId = selectedEntry
+    ? paneJumpEntryKey(selectedEntry)
+    : undefined;
 
   useEffect(() => {
     selectedItemRef.current?.scrollIntoView({ block: "nearest" });
@@ -730,27 +741,30 @@ function PaneJumpOverlay({
           </span>
         </div>
         {searching ? (
-          <input
-            ref={searchInputRef}
-            className="pane-jump-search"
-            type="text"
-            value={search}
-            spellCheck={false}
-            autoComplete="off"
-            placeholder="Workspace, tab, directory, or agent"
-            role="combobox"
-            aria-label="Search panes"
-            aria-expanded={true}
-            aria-autocomplete="list"
-            aria-controls={listId}
-            aria-activedescendant={
-              selectedPaneId
-                ? `${listId}-${encodeURIComponent(selectedPaneId)}`
-                : undefined
-            }
-            onChange={(event) => onSearchChange(event.target.value)}
-            onBlur={() => onClose()}
-          />
+          <div className="pane-jump-search-field">
+            <Search size={15} aria-hidden="true" />
+            <input
+              ref={searchInputRef}
+              className="pane-jump-search"
+              type="text"
+              value={search}
+              spellCheck={false}
+              autoComplete="off"
+              placeholder="Workspace, tab, server, directory, or agent"
+              role="combobox"
+              aria-label="Search panes"
+              aria-expanded={true}
+              aria-autocomplete="list"
+              aria-controls={listId}
+              aria-activedescendant={
+                selectedPaneId
+                  ? `${listId}-${encodeURIComponent(selectedPaneId)}`
+                  : undefined
+              }
+              onChange={(event) => onSearchChange(event.target.value)}
+              onBlur={() => onClose()}
+            />
+          </div>
         ) : null}
         {entries.length === 0 ? (
           <p className="pane-jump-empty" role="status">
@@ -765,8 +779,8 @@ function PaneJumpOverlay({
         >
           {entries.map((entry, index) => (
             <button
-              key={entry.paneId}
-              id={`${listId}-${encodeURIComponent(entry.paneId)}`}
+              key={paneJumpEntryKey(entry)}
+              id={`${listId}-${encodeURIComponent(paneJumpEntryKey(entry))}`}
               ref={index === selectedIndex ? selectedItemRef : undefined}
               type="button"
               tabIndex={-1}
@@ -790,6 +804,11 @@ function PaneJumpOverlay({
               <span className="pane-jump-text">
                 <span className="pane-jump-title-line">
                   <strong>{entry.title}</strong>
+                  {entry.serverLabel ? (
+                    <span className="pane-jump-server-badge">
+                      {entry.serverLabel}
+                    </span>
+                  ) : null}
                   {entry.current ? (
                     <span className="pane-jump-current-badge">Current</span>
                   ) : null}
@@ -1371,6 +1390,10 @@ export default function App() {
   const [paneJumpIndex, setPaneJumpIndex] = useState(0);
   // null keeps the most-recently-used list; a string switches to typed search.
   const [paneJumpSearch, setPaneJumpSearch] = useState<string | null>(null);
+  // Pane search also lists agents on the other ready servers.
+  const searchServerPanes = useAllServerAgentSessions(
+    paneJumpSearch !== null,
+  ).panes;
   const paneJumpModifierRef = useRef<"ctrlKey" | "altKey" | "metaKey" | null>(
     null,
   );
@@ -1525,12 +1548,34 @@ export default function App() {
       tabs: s.tabs,
       workspaces: s.workspaces,
     };
-    return paneJumpSearch === null
-      ? paneJumpEntries(snapshot, activePaneId)
-      : paneSearchEntries(snapshot, paneJumpSearch, activePaneId);
+    if (paneJumpSearch === null) return paneJumpEntries(snapshot, activePaneId);
+    const multiServer = searchServerPanes.some(
+      (pane) => pane.connectionId !== s.activeConnectionId,
+    );
+    const activeServerLabel = multiServer
+      ? s.connections.find(
+          (connection) => connection.id === s.activeConnectionId,
+        )?.label
+      : undefined;
+    return [
+      ...paneSearchEntries(
+        snapshot,
+        paneJumpSearch,
+        activePaneId,
+        activeServerLabel,
+      ),
+      ...serverPaneSearchEntries(
+        sortAgentPanes(searchServerPanes, [], "attention"),
+        paneJumpSearch,
+        s.activeConnectionId,
+      ),
+    ];
   }, [
     activePaneId,
     paneJumpSearch,
+    searchServerPanes,
+    s.activeConnectionId,
+    s.connections,
     s.layout,
     s.panes,
     s.recentPaneIds,
@@ -2754,10 +2799,13 @@ export default function App() {
   const commitPaneJump = useCallback(
     (index = paneJumpIndexRef.current) => {
       const targetPaneId = paneJumpTargetId(paneJumpOptions, index);
+      const source = paneJumpOptions[index]?.source;
       closePaneJump(!targetPaneId);
       if (!targetPaneId) return;
       if (!inspectorStateRef.current?.open) setMobileView("session");
-      void store.focusPane(targetPaneId);
+      if (source)
+        void openServerSession(source, source.workspaceId, targetPaneId);
+      else void store.focusPane(targetPaneId);
     },
     [closePaneJump, paneJumpOptions],
   );
