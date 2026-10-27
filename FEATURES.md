@@ -109,6 +109,9 @@ Inspector state is scoped to each checkout; see
   sidebar, switcher, command menu, Agent panel, and notifications.
 - Choose nested, **Separate**, or **Compact** agent views with optional
   attention-first ordering and grouping.
+- Sort **Separate** agents by **Recently opened**: blocked, done, and working
+  agents stay first, and idle agents follow the last time this browser opened
+  them. Open times stay in this browser's local storage.
 - Switch **Current / All servers** in the **Workspaces** heading in any agent
   layout. **All servers** labels each workspace with its server, preserving
   the existing worktree nesting and indentation. **Nested** also shows agents

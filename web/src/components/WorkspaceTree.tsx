@@ -69,6 +69,7 @@ import {
   parseAgentOrder,
   serializeAgentOrder,
 } from "../agentOrder";
+import { agentRecencyKey, useAgentRecency } from "../agentRecency";
 import {
   AGENT_LIST_SCOPE_STORAGE_KEY,
   WORKSPACE_AGENT_LAYOUT_STORAGE_KEY,
@@ -389,18 +390,33 @@ export function WorkspaceTree({
       return workspaceOrder || left.pane_id.localeCompare(right.pane_id);
     });
   }, [s.panes, s.workspaces]);
+  const agentRecency = useAgentRecency();
   const agentPanes = useMemo(
     () =>
       sortAgentPanes(
         defaultAgentPanes,
         agentPaneOrder,
         agentListPreferences.sort,
+        (pane) =>
+          agentRecency.get(agentRecencyKey(s.activeConnectionId, pane)) ?? 0,
       ),
-    [agentPaneOrder, defaultAgentPanes, agentListPreferences.sort],
+    [
+      agentPaneOrder,
+      defaultAgentPanes,
+      agentListPreferences.sort,
+      agentRecency,
+      s.activeConnectionId,
+    ],
   );
 
   const listedAgentPanes: (Pane | ServerAgentPane)[] = allServers
-    ? sortAgentPanes(allServerSessions.panes, [], agentSort)
+    ? sortAgentPanes(
+        allServerSessions.panes,
+        [],
+        agentSort,
+        (pane) =>
+          agentRecency.get(agentRecencyKey(pane.connectionId, pane)) ?? 0,
+      )
     : agentPanes;
   const agentGroups = groupOrderedAgentPanes(
     listedAgentPanes,
@@ -816,10 +832,11 @@ export function WorkspaceTree({
               icon={<ArrowDownWideNarrow size={15} aria-hidden="true" />}
               align="end"
               aria-label="Agent sort order"
-              title={`Sort agents: ${{ attention: "Attention first", workspace: "Workspace order", manual: "Manual order" }[agentSort]}`}
+              title={`Sort agents: ${{ attention: "Attention first", recent: "Recently opened", workspace: "Workspace order", manual: "Manual order" }[agentSort]}`}
               value={agentSort}
               options={[
                 { value: "attention", label: "Attention first" },
+                { value: "recent", label: "Recently opened" },
                 { value: "workspace", label: "Workspace order" },
                 ...(!allServers
                   ? [{ value: "manual", label: "Manual order" }]

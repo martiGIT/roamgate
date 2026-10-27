@@ -73,7 +73,7 @@ export function moveAgentPane(
 }
 
 export const AGENT_LIST_PREFERENCES_STORAGE_KEY = "agentListPreferences.v1";
-export type AgentSort = "attention" | "manual" | "workspace";
+export type AgentSort = "attention" | "recent" | "manual" | "workspace";
 export type AgentGrouping = "none" | "status" | "workspace" | "agent";
 export type AgentListPreferences = { sort: AgentSort; grouping: AgentGrouping };
 
@@ -89,7 +89,9 @@ export function parseAgentListPreferences(
   }
   return {
     sort:
-      value.sort === "manual" || value.sort === "workspace"
+      value.sort === "recent" ||
+      value.sort === "manual" ||
+      value.sort === "workspace"
         ? value.sort
         : "attention",
     grouping:
@@ -180,24 +182,50 @@ export function sortAgentPanes<
   panes: readonly T[],
   preferredPaneIds: readonly string[],
   sort: AgentSort,
+  /** When the user last opened a pane here; only the "recent" sort reads it. */
+  openedAt: (pane: T) => number = () => 0,
 ): T[] {
   if (sort === "workspace") return [...panes];
   const ordered = preferredPaneIds.length
     ? orderAgentPanes(panes, preferredPaneIds)
     : [...panes];
-  return sort === "attention"
-    ? ordered.sort((left, right) => {
-        const priority =
-          agentAttentionPriority(left.agent_status) -
-          agentAttentionPriority(right.agent_status);
-        if (priority || left.agent_status.toLowerCase() !== "idle")
-          return priority;
-        return (
-          (right.last_activity_at ?? 0) - (left.last_activity_at ?? 0) ||
-          (right.state_change_seq ?? 0) - (left.state_change_seq ?? 0)
-        );
-      })
-    : ordered;
+  if (sort === "attention") {
+    return ordered.sort((left, right) => {
+      const priority =
+        agentAttentionPriority(left.agent_status) -
+        agentAttentionPriority(right.agent_status);
+      if (priority || left.agent_status.toLowerCase() !== "idle")
+        return priority;
+      return agentActivityOrder(left, right);
+    });
+  }
+  if (sort === "recent") {
+    // Attention groups stay first; Done by latest activity, Idle by the
+    // last time the user opened the agent, then by latest activity.
+    return ordered.sort((left, right) => {
+      const priority =
+        agentAttentionPriority(left.agent_status) -
+        agentAttentionPriority(right.agent_status);
+      if (priority) return priority;
+      const status = left.agent_status.toLowerCase();
+      if (status === "done") return agentActivityOrder(left, right);
+      if (status !== "idle") return 0;
+      return (
+        openedAt(right) - openedAt(left) || agentActivityOrder(left, right)
+      );
+    });
+  }
+  return ordered;
+}
+
+function agentActivityOrder(
+  left: { state_change_seq?: number; last_activity_at?: number },
+  right: { state_change_seq?: number; last_activity_at?: number },
+): number {
+  return (
+    (right.last_activity_at ?? 0) - (left.last_activity_at ?? 0) ||
+    (right.state_change_seq ?? 0) - (left.state_change_seq ?? 0)
+  );
 }
 
 export function groupOrderedAgentPanes<
