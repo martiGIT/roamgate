@@ -111,7 +111,8 @@ Inspector state is scoped to each checkout; see
   attention-first ordering and grouping.
 - Workspaces with several tabs show numbered tab chips colored by the most
   urgent agent state (working, blocked, done). Click a chip to open that tab,
-  on any server. Narrow sidebars fall back to the plain tab count.
+  on any server. As the row narrows, extra tabs fold into a +N marker, down
+  to one chip.
 - Switch **Current / All servers** in the **Workspaces** heading in any agent
   layout. **All servers** labels each workspace with its server, preserving
   the existing worktree nesting and indentation. **Nested** also shows agents

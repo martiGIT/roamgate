@@ -55,14 +55,43 @@ export function workspaceTabChips(
   return chips;
 }
 
-/** Chips that fit, plus how many tabs the "+N" marker stands for. */
-export function visibleWorkspaceTabChips(chips: readonly WorkspaceTabChip[]): {
+// Chip geometry, kept in sync with WorkspaceTree.css.
+export const WORKSPACE_TAB_CHIP_WIDTH = 16;
+export const WORKSPACE_TAB_CHIP_GAP = 2;
+export const WORKSPACE_TAB_CHIP_MORE_WIDTH = 22;
+
+function chipsWidth(count: number): number {
+  return (
+    count * WORKSPACE_TAB_CHIP_WIDTH +
+    Math.max(0, count - 1) * WORKSPACE_TAB_CHIP_GAP
+  );
+}
+
+/**
+ * Chips that fit the available width, plus how many tabs the "+N" marker
+ * stands for. Narrow rows fold down to one chip and the marker.
+ */
+export function visibleWorkspaceTabChips(
+  chips: readonly WorkspaceTabChip[],
+  availableWidth = Number.POSITIVE_INFINITY,
+): {
   visible: WorkspaceTabChip[];
   hidden: number;
 } {
-  if (chips.length <= MAX_WORKSPACE_TAB_CHIPS) {
+  if (
+    chips.length <= MAX_WORKSPACE_TAB_CHIPS &&
+    chipsWidth(chips.length) <= availableWidth
+  ) {
     return { visible: [...chips], hidden: 0 };
   }
-  const visible = chips.slice(0, MAX_WORKSPACE_TAB_CHIPS - 1);
+  let count = Math.min(MAX_WORKSPACE_TAB_CHIPS - 1, chips.length - 1);
+  while (
+    count > 1 &&
+    chipsWidth(count) + WORKSPACE_TAB_CHIP_GAP + WORKSPACE_TAB_CHIP_MORE_WIDTH >
+      availableWidth
+  ) {
+    count -= 1;
+  }
+  const visible = chips.slice(0, Math.max(1, count));
   return { visible, hidden: chips.length - visible.length };
 }

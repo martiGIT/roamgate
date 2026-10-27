@@ -62,4 +62,19 @@ describe("workspace tab chips", () => {
     expect(folded.visible).toHaveLength(MAX_WORKSPACE_TAB_CHIPS - 1);
     expect(folded.hidden).toBe(9 - (MAX_WORKSPACE_TAB_CHIPS - 1));
   });
+
+  test("folds chips into +N as the row narrows, down to one chip", () => {
+    const five = Array.from({ length: 5 }, (_, index) =>
+      tab(`t${index}`, "w1", index + 1),
+    );
+    const chips = workspaceTabChips(five, []).get("w1") ?? [];
+    const shown = (width: number) =>
+      visibleWorkspaceTabChips(chips, width).visible.length;
+    expect(shown(88)).toBe(5);
+    expect(shown(87)).toBe(3);
+    expect(shown(60)).toBe(2);
+    expect(shown(40)).toBe(1);
+    expect(shown(10)).toBe(1);
+    expect(visibleWorkspaceTabChips(chips, 10).hidden).toBe(4);
+  });
 });

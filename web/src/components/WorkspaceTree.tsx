@@ -15,6 +15,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -1255,11 +1256,27 @@ function WorkspaceTabChips({
   workspaceFocused: boolean;
   onOpen: (chip: WorkspaceTabChip) => void;
 }) {
-  const { visible, hidden } = visibleWorkspaceTabChips(chips);
+  const ref = useRef<HTMLSpanElement>(null);
+  const [availableWidth, setAvailableWidth] = useState<number>();
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setAvailableWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const { visible, hidden } = visibleWorkspaceTabChips(chips, availableWidth);
   const stop = (event: { stopPropagation: () => void }) =>
     event.stopPropagation();
   return (
-    <span className="workspace-tab-chips" role="group" aria-label="Tabs">
+    <span
+      ref={ref}
+      className="workspace-tab-chips"
+      role="group"
+      aria-label="Tabs"
+    >
       {visible.map((chip) => {
         const status = TAB_CHIP_STATUS_LABELS[chip.status];
         const name = chip.label.trim() || `Tab ${chip.number}`;

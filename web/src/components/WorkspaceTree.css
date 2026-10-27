@@ -286,27 +286,26 @@
   color: var(--muted);
 }
 
-/* Numbered tab chips replace the plain tab count when the row has room. */
-.workspace-tree-content {
-  container: workspace-tree / inline-size;
-}
-
+/* Numbered tab chips replace the plain tab count. The chip row takes the
+   space left after the name and folds extra tabs into "+N" as it narrows. */
 .workspace-tab-count.has-tab-chips {
   display: none;
 }
 
 .workspace-tab-chips {
-  flex: 1 0 auto;
+  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  min-width: 0;
+  min-width: 40px;
+  overflow: hidden;
 }
 
 .workspace-tab-chip {
-  min-width: 16px;
+  flex: 0 0 16px;
+  width: 16px;
   height: 16px;
-  padding: 0 3px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
@@ -340,16 +339,8 @@
 }
 
 .workspace-tab-chip-more {
+  flex: 0 0 auto;
+  min-width: 22px;
   color: color-mix(in srgb, var(--muted) 55%, transparent);
   font-size: 10px;
-}
-
-@container workspace-tree (max-width: 260px) {
-  .workspace-tab-count.has-tab-chips {
-    display: inline;
-  }
-
-  .workspace-tab-chips {
-    display: none;
-  }
 }
