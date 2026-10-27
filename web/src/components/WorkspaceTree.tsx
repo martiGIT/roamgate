@@ -1507,15 +1507,6 @@ function WorkspaceRow({
         <strong className="ws-label" title={workspaceDisplayName(w)}>
           {workspaceDisplayName(w)}
         </strong>
-        {source ? (
-          <span
-            className="workspace-server-badge"
-            title={source.serverLabel}
-            aria-label={`Server: ${source.serverLabel}`}
-          >
-            {source.serverLabel}
-          </span>
-        ) : null}
         {tabCountVisible ? (
           <span
             className="workspace-tab-count"
@@ -1523,6 +1514,15 @@ function WorkspaceRow({
             aria-label={`${tabCount} tabs`}
           >
             {tabCount}
+          </span>
+        ) : null}
+        {source ? (
+          <span
+            className="workspace-server-badge"
+            title={source.serverLabel}
+            aria-label={`Server: ${source.serverLabel}`}
+          >
+            {source.serverLabel}
           </span>
         ) : null}
         {pinned ? (
