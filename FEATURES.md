@@ -112,6 +112,10 @@ Inspector state is scoped to each checkout; see
 - Sort **Separate** agents by **Recently opened**: blocked, done, and working
   agents stay first, and idle agents follow the last time this browser opened
   them. Open times stay in this browser's local storage.
+- Workspaces with several tabs show numbered tab chips colored by the most
+  urgent agent state (working, blocked, done). Click a chip to open that tab,
+  on any server. As the row narrows, extra tabs fold into a +N marker, down
+  to one chip.
 - Switch **Current / All servers** in the **Workspaces** heading in any agent
   layout. **All servers** labels each workspace with its server, preserving
   the existing worktree nesting and indentation. **Nested** also shows agents

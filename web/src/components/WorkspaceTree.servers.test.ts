@@ -1,4 +1,4 @@
-import { expect, jest, spyOn, test } from "bun:test";
+import { expect, jest, mock, spyOn, test } from "bun:test";
 import { Window } from "happy-dom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -55,25 +55,49 @@ function snapshot(id: string): ConnectionAgentSessions {
             }
           : worktree,
     })),
-    tabs: ["w1", "w2", "w3"].map((workspace_id) => ({
-      workspace_id,
-      tab_id: `${workspace_id}:t1`,
-      number: 1,
-      label: `${id} ${workspace_id} tab`,
-      focused: true,
-      pane_count: 1,
-      agent_status: "working",
-    })),
-    panes: ["w1", "w3"].map((workspace_id) => ({
-      workspace_id,
-      pane_id: `${workspace_id}:p1`,
-      tab_id: `${workspace_id}:t1`,
-      terminal_id: `${workspace_id}:term`,
-      agent: "codex",
-      agent_status: "working",
-      focused: workspace_id === "w1",
-      revision: 1,
-    })),
+    tabs: [
+      ...["w1", "w2", "w3"].map((workspace_id) => ({
+        workspace_id,
+        tab_id: `${workspace_id}:t1`,
+        number: 1,
+        label: `${id} ${workspace_id} tab`,
+        focused: true,
+        pane_count: 1,
+        agent_status: "working",
+      })),
+      {
+        workspace_id: "w2",
+        tab_id: "w2:t2",
+        number: 2,
+        label: `${id} w2 second tab`,
+        focused: false,
+        pane_count: 1,
+        agent_status: "unknown",
+      },
+    ],
+    panes: ["w1", "w3"]
+      .map((workspace_id) => ({
+        workspace_id,
+        pane_id: `${workspace_id}:p1`,
+        tab_id: `${workspace_id}:t1`,
+        terminal_id: `${workspace_id}:term`,
+        agent: "codex",
+        agent_status: "working",
+        focused: workspace_id === "w1",
+        revision: 1,
+      }))
+      .concat([
+        {
+          workspace_id: "w2",
+          pane_id: "w2:p2",
+          tab_id: "w2:t2",
+          terminal_id: "w2:term2",
+          agent: "",
+          agent_status: "unknown",
+          focused: false,
+          revision: 1,
+        },
+      ]),
   };
 }
 
@@ -154,7 +178,9 @@ if (process.env.ROAMGATE_SERVER_TREE_DOM_TEST !== "1") {
       );
       const close = spyOn(store, "closeWorkspace").mockResolvedValue(undefined);
       const selected = spyOn(store, "focusPane").mockResolvedValue(undefined);
-      mocks.push(summary, navigate, focus, rename, close, selected);
+      const focusTab = spyOn(store, "focusTab").mockResolvedValue(undefined);
+      const onSelect = mock(() => {});
+      mocks.push(summary, navigate, focus, rename, close, selected, focusTab);
       __storeTesting.replaceState({
         ...previousState,
         activeConnectionId: "alpha",
@@ -176,7 +202,10 @@ if (process.env.ROAMGATE_SERVER_TREE_DOM_TEST !== "1") {
       await write(AGENT_LIST_SCOPE_STORAGE_KEY, "all");
       await act(async () =>
         root.render(
-          createElement(WorkspaceTree, { onCreateWorkspace: () => {} }),
+          createElement(WorkspaceTree, {
+            onCreateWorkspace: () => {},
+            onSelect,
+          }),
         ),
       );
       expect(container.querySelector(".workspace-server-group")).toBeNull();
@@ -261,6 +290,33 @@ if (process.env.ROAMGATE_SERVER_TREE_DOM_TEST !== "1") {
           ".workspace-tab-count + .workspace-server-badge",
         ),
       ).not.toBeNull();
+      expect(
+        workspace("beta", "beta w1").querySelector(".workspace-tab-chip"),
+      ).toBeNull();
+      const chips = workspace("beta", "beta w2").querySelectorAll<HTMLElement>(
+        ".workspace-tab-chip",
+      );
+      expect([...chips].map((chip) => chip.textContent)).toEqual(["1", "2"]);
+      expect([...chips].every((chip) => chip.tabIndex === 0)).toBe(true);
+      expect(
+        workspace("beta", "beta w2").querySelector(
+          ".workspace-tab-chips + .workspace-server-badge",
+        ),
+      ).not.toBeNull();
+      await act(async () => chips[1].click());
+      expect(navigate).toHaveBeenLastCalledWith({
+        connectionId: "beta",
+        runtimeGeneration: 1,
+        workspaceId: "w2",
+        paneId: "w2:p2",
+      });
+      const localChip = workspace(
+        "alpha",
+        "alpha w2",
+      ).querySelectorAll<HTMLElement>(".workspace-tab-chip")[1];
+      await act(async () => localChip.click());
+      expect(focusTab).toHaveBeenLastCalledWith("w2:t2");
+      expect(onSelect).toHaveBeenLastCalledWith(snapshots[0].workspaces[1]);
 
       await write(WORKSPACE_AGENT_LAYOUT_STORAGE_KEY, "nested");
       await act(async () =>
@@ -361,7 +417,10 @@ if (process.env.ROAMGATE_SERVER_TREE_DOM_TEST !== "1") {
         });
         await act(async () =>
           root.render(
-            createElement(WorkspaceTree, { onCreateWorkspace: () => {} }),
+            createElement(WorkspaceTree, {
+              onCreateWorkspace: () => {},
+              onSelect,
+            }),
           ),
         );
         expect(
