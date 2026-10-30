@@ -1284,7 +1284,6 @@ function WorkspaceTabChips({
           <button
             key={chip.tabId}
             type="button"
-            tabIndex={-1}
             className={`workspace-tab-chip is-${chip.status} ${
               workspaceFocused && chip.focused ? "is-active" : ""
             }`}
@@ -1589,9 +1588,9 @@ function WorkspaceRow({
         <strong className="ws-label" title={workspaceDisplayName(w)}>
           {workspaceDisplayName(w)}
         </strong>
-        {tabCountVisible ? (
+        {tabCountVisible && !tabChipsVisible ? (
           <span
-            className={`workspace-tab-count ${tabChipsVisible ? "has-tab-chips" : ""}`}
+            className="workspace-tab-count"
             title={`${tabCount} tabs`}
             aria-label={`${tabCount} tabs`}
           >
@@ -1604,7 +1603,7 @@ function WorkspaceRow({
             workspaceFocused={workspaceFocused}
             onOpen={(chip) => {
               if (current) {
-                void store.focusTab(chip.tabId);
+                void store.focusTab(chip.tabId).then(() => onSelect?.(w));
                 return;
               }
               if (source) {

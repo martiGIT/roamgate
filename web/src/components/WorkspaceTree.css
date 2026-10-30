@@ -288,10 +288,6 @@
 
 /* Numbered tab chips replace the plain tab count. The chip row takes the
    space left after the name and folds extra tabs into "+N" as it narrows. */
-.workspace-tab-count.has-tab-chips {
-  display: none;
-}
-
 .workspace-tab-chips {
   flex: 1 1 0;
   display: inline-flex;
@@ -315,6 +311,11 @@
   line-height: 14px;
   text-align: center;
   cursor: pointer;
+}
+
+.workspace-tab-chip:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
 }
 
 .workspace-tab-chip:hover {
