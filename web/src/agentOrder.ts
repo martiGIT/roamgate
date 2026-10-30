@@ -118,7 +118,7 @@ export function agentAttentionPriority(status: string): number {
   return index < 0 ? ATTENTION_STATUSES.length - 1 : index;
 }
 
-/** Join server activity metadata; no activity history is tracked in the browser. */
+/** Join the server activity signal used by attention ordering. */
 export function withAgentActivity(
   panes: readonly Pane[],
   result: unknown,

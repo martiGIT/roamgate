@@ -189,6 +189,20 @@ describe("recently opened ordering", () => {
       "idle-active",
       "idle-never",
     ]);
+    expect(
+      sortAgentPanes(panes, [], "attention", () => {
+        throw new Error("Attention first must not read open history");
+      }).map((pane) => pane.pane_id),
+    ).toEqual([
+      "blocked",
+      "done-old",
+      "done-new",
+      "working",
+      "idle-active",
+      "idle-opened",
+      "idle-never",
+      "idle-older",
+    ]);
     // Without open times, Idle falls back to the attention activity order.
     expect(
       sortAgentPanes(panes, [], "recent")

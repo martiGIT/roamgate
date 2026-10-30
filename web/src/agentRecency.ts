@@ -20,9 +20,8 @@ export function agentRecencyKey(
 
 export function parseAgentRecency(raw: string | null): Map<string, number> {
   const recency = new Map<string, number>();
-  if (!raw) return recency;
   try {
-    const value: unknown = JSON.parse(raw);
+    const value: unknown = JSON.parse(raw ?? "null");
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       return recency;
     }
@@ -38,7 +37,7 @@ export function parseAgentRecency(raw: string | null): Map<string, number> {
       recency.set(key, openedAt);
     }
   } catch {
-    return new Map();
+    // Missing or invalid history starts empty.
   }
   return recency;
 }
@@ -48,10 +47,13 @@ export function recordAgentOpened(
   key: string,
   openedAt: number,
 ): Map<string, number> {
-  const entries = [...recency].filter(([candidate]) => candidate !== key);
-  entries.push([key, openedAt]);
-  entries.sort((left, right) => right[1] - left[1]);
-  return new Map(entries.slice(0, MAX_AGENT_RECENCY_ENTRIES));
+  const next = new Map(recency);
+  next.set(key, openedAt);
+  return new Map(
+    [...next]
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, MAX_AGENT_RECENCY_ENTRIES),
+  );
 }
 
 let cachedRaw: string | null | undefined;

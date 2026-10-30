@@ -114,6 +114,12 @@ import { TREE_DEPTH_INDENT } from "./treeIndent";
 import "./WorkspaceTree.css";
 import "./WorkspaceAutoSyncDialog.css";
 
+const AGENT_SORT_LABELS: Record<AgentSort, string> = {
+  attention: "Attention first",
+  recent: "Recently opened",
+  workspace: "Workspace order",
+  manual: "Manual order",
+};
 const LONG_PRESS_MS = 550;
 const LONG_PRESS_MOVE_PX = 10;
 const EMPTY_AGENT_PANES_BY_WORKSPACE = new Map<string, Pane[]>();
@@ -836,16 +842,11 @@ export function WorkspaceTree({
               icon={<ArrowDownWideNarrow size={15} aria-hidden="true" />}
               align="end"
               aria-label="Agent sort order"
-              title={`Sort agents: ${{ attention: "Attention first", recent: "Recently opened", workspace: "Workspace order", manual: "Manual order" }[agentSort]}`}
+              title={`Sort agents: ${AGENT_SORT_LABELS[agentSort]}`}
               value={agentSort}
-              options={[
-                { value: "attention", label: "Attention first" },
-                { value: "recent", label: "Recently opened" },
-                { value: "workspace", label: "Workspace order" },
-                ...(!allServers
-                  ? [{ value: "manual", label: "Manual order" }]
-                  : []),
-              ]}
+              options={Object.entries(AGENT_SORT_LABELS)
+                .filter(([value]) => !allServers || value !== "manual")
+                .map(([value, label]) => ({ value, label }))}
               onChange={(sort) => {
                 clearAgentDrag();
                 setAgentListPreferences((current) => ({
