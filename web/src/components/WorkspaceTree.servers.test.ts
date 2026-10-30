@@ -255,6 +255,12 @@ if (process.env.ROAMGATE_SERVER_TREE_DOM_TEST !== "1") {
         workspace("beta", "beta w1").querySelector(".workspace-tab-count")
           ?.textContent,
       ).toBe("1");
+      // The count stays next to the name; the server badge keeps the right column.
+      expect(
+        workspace("beta", "beta w1").querySelector(
+          ".workspace-tab-count + .workspace-server-badge",
+        ),
+      ).not.toBeNull();
 
       await write(WORKSPACE_AGENT_LAYOUT_STORAGE_KEY, "nested");
       await act(async () =>
