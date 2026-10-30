@@ -189,33 +189,23 @@ export function sortAgentPanes<
   const ordered = preferredPaneIds.length
     ? orderAgentPanes(panes, preferredPaneIds)
     : [...panes];
-  if (sort === "attention") {
-    return ordered.sort((left, right) => {
-      const priority =
-        agentAttentionPriority(left.agent_status) -
-        agentAttentionPriority(right.agent_status);
-      if (priority || left.agent_status.toLowerCase() !== "idle")
-        return priority;
-      return agentActivityOrder(left, right);
-    });
-  }
-  if (sort === "recent") {
-    // Attention groups stay first; Done by latest activity, Idle by the
-    // last time the user opened the agent, then by latest activity.
-    return ordered.sort((left, right) => {
-      const priority =
-        agentAttentionPriority(left.agent_status) -
-        agentAttentionPriority(right.agent_status);
-      if (priority) return priority;
-      const status = left.agent_status.toLowerCase();
-      if (status === "done") return agentActivityOrder(left, right);
-      if (status !== "idle") return 0;
+  if (sort === "manual") return ordered;
+  return ordered.sort((left, right) => {
+    const priority =
+      agentAttentionPriority(left.agent_status) -
+      agentAttentionPriority(right.agent_status);
+    if (priority) return priority;
+    const status = left.agent_status.toLowerCase();
+    if (status === "idle") {
       return (
-        openedAt(right) - openedAt(left) || agentActivityOrder(left, right)
+        (sort === "recent" ? openedAt(right) - openedAt(left) : 0) ||
+        agentActivityOrder(left, right)
       );
-    });
-  }
-  return ordered;
+    }
+    return sort === "recent" && status === "done"
+      ? agentActivityOrder(left, right)
+      : 0;
+  });
 }
 
 function agentActivityOrder(
